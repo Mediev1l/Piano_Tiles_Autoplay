@@ -1,4 +1,3 @@
-import time
 import mss
 import pyautogui
 from pynput.keyboard import Key, Listener
@@ -6,7 +5,7 @@ import threading
 
 run = False
 
-start = (876, 688)
+offset = 50
 boundries = (670, 159, 1200, 1000)
 x_axis = (75, 220, 360, 490)
 
@@ -16,7 +15,6 @@ threads = []
 
 def on_press(key):
     global run
-
     try:
         k = key.char  # single-char keys
     except:
@@ -42,7 +40,7 @@ def on_click(x, y, button, pressed):
 def search(sc, x, index):
     for i in range(boundries[3] - boundries[1] - 1, 0, -1):
         pixel = sc.pixel(x, i)[0]
-        if pixel < 40:
+        if pixel < 59:
             results[index] = i
             return
 
@@ -57,44 +55,27 @@ if __name__ == '__main__':
     # mouse_thread = pynput.mouse.Listener(on_click=on_click)
     # mouse_thread.start()
 
-    time.sleep(2)
-
-    with mss.mss() as sct:
-        shot = sct.grab(boundries)
-        # img = Image.frombytes("RGB", shot.size, shot.bgra, "raw", "BGRX")
-        # img.save("test.png")
-        # img.show()
-
-    for index, x in enumerate(x_axis):
-        threads.append(threading.Thread(target=search, args=(shot, x, index)))
-
-    for thr in threads:
-        thr.start()
-
-    for thr in threads:
-        thr.join()
-
-    pyautogui.click(*start)
-
-    # img = cv2.imread(shot, 0)
-    #
-    # cv2.imshow('image', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    # pyautogui.click(1730, 55)
-    # 55 while True:
-    #      listener = Listener(on_press=on_press)
-    #      # listener.start()
-    # with Listener(on_press=on_press, on_release=on_release) as listener:
-    #     listener.start()
-
     while True:
-        with mss.mss() as sct:
-            monitor = sct.monitors[1]
-    
-            shot = sct.grab(monitor)
 
-        time.sleep(1)
-        print(pyautogui.position())
-        print(shot.pixel(pyautogui.position().x, pyautogui.position().y))
+        while run:
+
+            with mss.mss() as sct:
+                shot = sct.grab(boundries)
+
+            threads.clear()
+
+            for index, x in enumerate(x_axis):
+                threads.append(threading.Thread(target=search, args=(shot, x, index)))
+
+            for thr in threads:
+                thr.start()
+
+            for thr in threads:
+                thr.join()
+
+            x = boundries[0] + x_axis[results.index(max(results))]
+            y = boundries[1] + max(results) + offset
+
+            if(y > boundries[1] + offset):
+                offset += 0.3
+                pyautogui.click(x, y)
